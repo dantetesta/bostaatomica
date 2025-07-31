@@ -204,6 +204,8 @@
         /* Smooth scroll para o container das categorias */
         #category-nav {
             scroll-behavior: smooth;
+            /* Allow vertical scrolling to pass through on touch devices */
+            touch-action: pan-y;
         }
         
         /* Garantir que as setas fiquem fixas */
@@ -10372,18 +10374,21 @@
             document.querySelectorAll('.category-item').forEach(item => {
                 item.classList.remove('active');
             });
-            
+
             // Adicionar classe active no botão correspondente
             const activeButton = document.querySelector(`[data-category="${category}"]`);
             if (activeButton) {
                 activeButton.classList.add('active');
-                
-                // Centralizar botão ativo no scroll horizontal
-                activeButton.scrollIntoView({
-                    behavior: 'smooth',
-                    block: 'nearest',
-                    inline: 'center'
-                });
+
+                // Centralizar botão ativo no scroll horizontal somente se a barra de categorias estiver fixa
+                const categoryNav = document.getElementById('category-nav');
+                if (categoryNav && categoryNav.getBoundingClientRect().top <= 0) {
+                    activeButton.scrollIntoView({
+                        behavior: 'smooth',
+                        block: 'nearest',
+                        inline: 'center'
+                    });
+                }
             }
         }
 
