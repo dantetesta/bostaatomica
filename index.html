@@ -10368,7 +10368,24 @@
             }, 1500); // 1.5 segundos
         }
 
-        // Atualizar categoria ativa - VERSÃO SIMPLES
+        // Centralizar botão ativo no menu de categorias
+        function centerCategoryButton(button) {
+            const container = document.getElementById('category-nav');
+            if (!container || !button) return;
+
+            const containerRect = container.getBoundingClientRect();
+            const buttonRect = button.getBoundingClientRect();
+
+            const offset = buttonRect.left - containerRect.left -
+                            (containerRect.width / 2 - buttonRect.width / 2);
+
+            container.scrollTo({
+                left: container.scrollLeft + offset,
+                behavior: 'smooth'
+            });
+        }
+
+        // Atualizar categoria ativa e centralizar no menu horizontal
         function updateActiveCategory(category) {
             // Remover classe active de todos os botões
             document.querySelectorAll('.category-item').forEach(item => {
@@ -10379,20 +10396,11 @@
             const activeButton = document.querySelector(`[data-category="${category}"]`);
             if (activeButton) {
                 activeButton.classList.add('active');
-
-                // Centralizar botão ativo no scroll horizontal somente se a barra de categorias estiver fixa
-                const categoryNav = document.getElementById('category-nav');
-                if (categoryNav && categoryNav.getBoundingClientRect().top <= 0) {
-                    activeButton.scrollIntoView({
-                        behavior: 'smooth',
-                        block: 'nearest',
-                        inline: 'center'
-                    });
-                }
+                centerCategoryButton(activeButton);
             }
         }
 
-        // Função removida - agora usamos scrollIntoView nativo
+        // A centralização é feita manualmente para evitar "snap" vertical
 
         // Setup search
         function setupSearch() {
