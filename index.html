@@ -201,10 +201,9 @@
             transform: scale(0.95);
         }
         
-        /* Smooth scroll para o container das categorias */
+        /* Container do menu de categorias */
         #category-nav {
-            scroll-behavior: smooth;
-            /* Allow vertical scrolling on the page while enabling horizontal drag */
+            /* scroll-behavior removido para evitar efeito de snap */
             touch-action: pan-x;
         }
         
@@ -10388,10 +10387,8 @@
             const offset = buttonRect.left - containerRect.left -
                             (containerRect.width / 2 - buttonRect.width / 2);
 
-            container.scrollTo({
-                left: container.scrollLeft + offset,
-                behavior: 'smooth'
-            });
+            // Scroll instantâneo para evitar snap visual
+            container.scrollLeft += offset;
         }
 
         // Atualizar categoria ativa e centralizar no menu horizontal
