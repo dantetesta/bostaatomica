@@ -10289,82 +10289,38 @@
         let currentActiveCategory = null;
         
         function setupScrollSpy() {
-            // Event listener de scroll otimizado
-            let ticking = false;
-            
-            function updateScrollSpy() {
-                if (!scrollSpyEnabled) return;
-                
-                // Calcular offset do header + menu
-                const header = document.querySelector('header');
-                const categoryNav = document.querySelector('.category-nav');
-                const headerHeight = header ? header.offsetHeight : 89;
-                const navHeight = categoryNav ? categoryNav.offsetHeight : 51;
-                const totalOffset = headerHeight + navHeight + 20; // 20px margem
-                
-                const scrollPosition = window.scrollY + totalOffset;
-                
-                // Pegar todas as seções ativas
-                const sections = categoriesData
-                    .filter(cat => cat.status === 'Ativo')
-                    .map(cat => {
-                        const element = document.getElementById(cat.nome_categoria);
-                        if (element) {
-                            return {
-                                name: cat.nome_categoria,
-                                element: element,
-                                top: element.offsetTop,
-                                bottom: element.offsetTop + element.offsetHeight
-                            };
-                        }
-                        return null;
-                    })
-                    .filter(section => section !== null)
-                    .sort((a, b) => a.top - b.top);
-                
-                if (sections.length === 0) return;
-                
-                let activeSection = null;
-                
-                // Se estiver no topo da página, ativar primeira seção
-                if (window.scrollY < 100) {
-                    activeSection = sections[0].name;
-                } else {
-                    // Encontrar a seção ativa baseada na posição do scroll
-                    for (let i = sections.length - 1; i >= 0; i--) {
-                        if (scrollPosition >= sections[i].top) {
-                            activeSection = sections[i].name;
-                            break;
+            const header = document.querySelector('header');
+            const categoryNav = document.querySelector('.category-nav');
+            const headerHeight = header ? header.offsetHeight : 89;
+            const navHeight = categoryNav ? categoryNav.offsetHeight : 51;
+            const offset = headerHeight + navHeight + 20; // 20px margem
+
+            const observerOptions = {
+                root: null,
+                rootMargin: `-${offset}px 0px 0px 0px`,
+                threshold: 0.5
+            };
+
+            const observer = new IntersectionObserver(entries => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) {
+                        const id = entry.target.getAttribute('id');
+                        if (id && scrollSpyEnabled) {
+                            currentActiveCategory = id;
+                            updateActiveCategory(id);
                         }
                     }
-                    
-                    // Se não encontrou nenhuma, usar a primeira
-                    if (!activeSection) {
-                        activeSection = sections[0].name;
+                });
+            }, observerOptions);
+
+            categoriesData
+                .filter(cat => cat.status === 'Ativo')
+                .forEach(cat => {
+                    const section = document.getElementById(cat.nome_categoria);
+                    if (section) {
+                        observer.observe(section);
                     }
-                }
-                
-                // Só atualizar se mudou
-                if (activeSection && activeSection !== currentActiveCategory) {
-                    currentActiveCategory = activeSection;
-                    updateActiveCategory(activeSection);
-                }
-                
-                ticking = false;
-            }
-            
-            function onScroll() {
-                if (!ticking) {
-                    requestAnimationFrame(updateScrollSpy);
-                    ticking = true;
-                }
-            }
-            
-            // Adicionar event listener
-            window.addEventListener('scroll', onScroll, { passive: true });
-            
-            // Executar uma vez para definir estado inicial
-            setTimeout(updateScrollSpy, 100);
+                });
         }
         
         // Desabilitar scroll spy temporariamente após cliques
@@ -10387,8 +10343,10 @@
             const offset = buttonRect.left - containerRect.left -
                             (containerRect.width / 2 - buttonRect.width / 2);
 
-            // Scroll instantâneo para evitar snap visual
-            container.scrollLeft += offset;
+            container.scrollTo({
+                left: container.scrollLeft + offset,
+                behavior: 'smooth'
+            });
         }
 
         // Atualizar categoria ativa e centralizar no menu horizontal
