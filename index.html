@@ -233,7 +233,16 @@
             background: var(--cor-primaria);
             color: var(--cor-texto-branco);
         }
-        
+
+        /* Desativar qualquer efeito de scroll snap */
+        html, body, main, #menu-content {
+            scroll-snap-type: none !important;
+        }
+
+        section {
+            scroll-snap-align: none !important;
+        }
+
         /* Estilo específico para o botão de busca (lupa) */
         .search-button {
             display: inline-flex;
