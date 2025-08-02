@@ -6973,9 +6973,7 @@
         // Setup event listeners (called after data is loaded)
         function setupEventListeners() {
             setupSearch();
-            if (!isMobileDevice) {
-                setupScrollSpy();
-            }
+            setupScrollSpy();
             handleInitialHash();
             setupDeselectableRadios();
             setupKeyboardShortcuts();
@@ -10282,9 +10280,8 @@
         let scrollSpyEnabled = true;
         let scrollSpyTimeout = null;
         let currentActiveCategory = null;
-        
+
         function setupScrollSpy() {
-            if (isMobileDevice) return;
             const header = document.querySelector('header');
             const categoryNav = document.querySelector('.category-nav');
             const headerHeight = header ? header.offsetHeight : 89;
@@ -10330,7 +10327,6 @@
 
         // Centralizar botão ativo no menu de categorias
         function centerCategoryButton(button) {
-            if (isMobileDevice) return;
             const container = document.getElementById('category-nav');
             if (!container || !button) return;
 
@@ -10357,9 +10353,7 @@
             const activeButton = document.querySelector(`[data-category="${category}"]`);
             if (activeButton) {
                 activeButton.classList.add('active');
-                if (!isMobileDevice) {
-                    centerCategoryButton(activeButton);
-                }
+                centerCategoryButton(activeButton);
             }
         }
 
