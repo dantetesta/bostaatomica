@@ -1531,6 +1531,9 @@
         let couponDiscount = 0; // Valor do desconto aplicado
         let couponTimeout = null; // Timeout para aplicação automática
 
+        // Detectar se o usuário está em um dispositivo móvel (iPhone ou Android)
+        const isMobileDevice = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+
         // ===== FUNÇÃO UTILITÁRIA PARA VERIFICAÇÃO DEFENSIVA DE DOM =====
         
         /**
@@ -6980,7 +6983,9 @@
         // Setup event listeners (called after data is loaded)
         function setupEventListeners() {
             setupSearch();
-            setupScrollSpy();
+            if (!isMobileDevice) {
+                setupScrollSpy();
+            }
             handleInitialHash();
             setupDeselectableRadios();
             setupKeyboardShortcuts();
@@ -10289,6 +10294,7 @@
         let currentActiveCategory = null;
         
         function setupScrollSpy() {
+            if (isMobileDevice) return;
             const header = document.querySelector('header');
             const categoryNav = document.querySelector('.category-nav');
             const headerHeight = header ? header.offsetHeight : 89;
@@ -10334,6 +10340,7 @@
 
         // Centralizar botão ativo no menu de categorias
         function centerCategoryButton(button) {
+            if (isMobileDevice) return;
             const container = document.getElementById('category-nav');
             if (!container || !button) return;
 
@@ -10360,7 +10367,9 @@
             const activeButton = document.querySelector(`[data-category="${category}"]`);
             if (activeButton) {
                 activeButton.classList.add('active');
-                centerCategoryButton(activeButton);
+                if (!isMobileDevice) {
+                    centerCategoryButton(activeButton);
+                }
             }
         }
 
