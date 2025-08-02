@@ -204,6 +204,7 @@
         /* Container do menu de categorias */
         #category-nav {
             touch-action: pan-y pan-x;
+            scroll-snap-type: x mandatory;
         }
         
         /* Garantir que as setas fiquem fixas */
@@ -215,6 +216,7 @@
         .category-item {
             transition: all 0.3s ease;
             white-space: nowrap;
+            scroll-snap-align: start;
         }
         
         /* Hide scrollbar for category navigation */
@@ -10325,22 +10327,22 @@
             }, 1500); // 1.5 segundos
         }
 
-        // Centralizar botão ativo no menu de categorias
-        function centerCategoryButton(button) {
-            const container = document.getElementById('category-nav');
-            if (!container || !button) return;
+        // Centralizar botão ativo no menu de categorias (desativado)
+        // function centerCategoryButton(button) {
+        //     const container = document.getElementById('category-nav');
+        //     if (!container || !button) return;
 
-            const containerRect = container.getBoundingClientRect();
-            const buttonRect = button.getBoundingClientRect();
+        //     const containerRect = container.getBoundingClientRect();
+        //     const buttonRect = button.getBoundingClientRect();
 
-            const offset = buttonRect.left - containerRect.left -
-                            (containerRect.width / 2 - buttonRect.width / 2);
+        //     const offset = buttonRect.left - containerRect.left -
+        //                     (containerRect.width / 2 - buttonRect.width / 2);
 
-            container.scrollTo({
-                left: container.scrollLeft + offset,
-                behavior: 'smooth'
-            });
-        }
+        //     container.scrollTo({
+        //         left: container.scrollLeft + offset,
+        //         behavior: 'smooth'
+        //     });
+        // }
 
         // Atualizar categoria ativa e centralizar no menu horizontal
         function updateActiveCategory(category) {
@@ -10353,7 +10355,7 @@
             const activeButton = document.querySelector(`[data-category="${category}"]`);
             if (activeButton) {
                 activeButton.classList.add('active');
-                centerCategoryButton(activeButton);
+                // centerCategoryButton(activeButton);
             }
         }
 
