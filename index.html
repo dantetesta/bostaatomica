@@ -63,6 +63,9 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- QR Code Library -->
     <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
+    <!-- Swiper Library -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.css" />
+    <script src="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.js"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
         
@@ -203,8 +206,7 @@
         
         /* Container do menu de categorias */
         #category-nav {
-            touch-action: pan-y pan-x;
-            scroll-snap-type: x mandatory;
+            touch-action: pan-y;
         }
         
         /* Garantir que as setas fiquem fixas */
@@ -698,9 +700,11 @@
                     </svg>
                 </button>
                 
-                <!-- Container das categorias -->
-                <div class="flex space-x-2 overflow-x-auto scrollbar-hide flex-1" id="category-nav">
-                    <!-- Categories will be populated dynamically from CSV data -->
+                <!-- Container das categorias (Swiper) -->
+                <div class="swiper flex-1" id="category-nav">
+                    <div class="swiper-wrapper">
+                        <!-- Categories will be populated dynamically from CSV data -->
+                    </div>
                 </div>
                 
                 <!-- Seta Direita (Desktop apenas) -->
@@ -1522,6 +1526,9 @@
         let appliedCoupon = null; // Cupom atualmente aplicado
         let couponDiscount = 0; // Valor do desconto aplicado
         let couponTimeout = null; // Timeout para aplicação automática
+
+        let categorySwiper = null; // Instância do Swiper para navegação de categorias
+        let categorySlideMap = {}; // Mapeamento de categoria para índice de slide
 
         // Detectar se o usuário está em um dispositivo móvel (iPhone ou Android)
         const isMobileDevice = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
@@ -3370,7 +3377,7 @@
 
         // Render category navigation
         function renderCategoryNavigation() {
-            const container = document.getElementById('category-nav');
+            const container = document.querySelector('#category-nav .swiper-wrapper');
             if (!container || !categoriesData.length) return;
 
             // Sort categories by order
@@ -3380,29 +3387,39 @@
 
             // Add search button (lupa) first
             let html = `
-                <button class="category-item search-button" data-action="search" title="Buscar produtos">
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
-                    </svg>
-                </button>
+                <div class="swiper-slide">
+                    <button class="category-item search-button" data-action="search" title="Buscar produtos">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+                        </svg>
+                    </button>
+                </div>
             `;
 
             // Add category buttons
-            html += sortedCategories.map(category => `
-                <button class="category-item px-4 py-2 rounded-full text-sm font-medium border border-gray-300 transition-colors" 
-                        data-category="${category.nome_categoria}">
-                    ${category.titulo_exibicao}
-                </button>
+            html += sortedCategories.map((category, index) => `
+                <div class="swiper-slide">
+                    <button class="category-item px-4 py-2 rounded-full text-sm font-medium border border-gray-300 transition-colors"
+                            data-category="${category.nome_categoria}">
+                        ${category.titulo_exibicao}
+                    </button>
+                </div>
             `).join('');
 
             container.innerHTML = html;
-            
+
+            // Mapear categorias para índices de slide
+            categorySlideMap = { search: 0 };
+            sortedCategories.forEach((cat, idx) => {
+                categorySlideMap[cat.nome_categoria] = idx + 1;
+            });
+
             // Add event listeners after creating the buttons
             setupCategoryClickListeners();
-            
-            // Setup navigation arrows
-            setupNavigationArrows();
-            
+
+            // Inicializar Swiper e setas de navegação
+            initializeCategorySwiper();
+
             // Ativar primeira categoria real por padrão
             if (sortedCategories.length > 0) {
                 setTimeout(() => {
@@ -3415,29 +3432,23 @@
         function updateNavigationArrows() {
             // Só funciona no desktop
             if (window.innerWidth <= 768) return;
-            
-            const container = document.getElementById('category-nav');
+
             const leftArrow = document.getElementById('nav-arrow-left');
             const rightArrow = document.getElementById('nav-arrow-right');
-            
-            if (!container || !leftArrow || !rightArrow) return;
-            
-            const scrollLeft = container.scrollLeft;
-            const scrollWidth = container.scrollWidth;
-            const clientWidth = container.clientWidth;
-            const maxScroll = scrollWidth - clientWidth;
-            
+
+            if (!leftArrow || !rightArrow || !categorySwiper) return;
+
             // Seta esquerda: visível se não estiver no início
-            if (scrollLeft <= 5) {
+            if (categorySwiper.isBeginning) {
                 leftArrow.style.opacity = '0';
                 leftArrow.style.pointerEvents = 'none';
             } else {
                 leftArrow.style.opacity = '1';
                 leftArrow.style.pointerEvents = 'auto';
             }
-            
+
             // Seta direita: visível se não estiver no final
-            if (scrollLeft >= maxScroll - 5) {
+            if (categorySwiper.isEnd) {
                 rightArrow.style.opacity = '0';
                 rightArrow.style.pointerEvents = 'none';
             } else {
@@ -3445,48 +3456,51 @@
                 rightArrow.style.pointerEvents = 'auto';
             }
         }
-        
-        // Função para rolar as categorias
+
+        // Função para rolar as categorias via Swiper
         function scrollCategories(direction) {
-            const container = document.getElementById('category-nav');
-            if (!container) return;
-            
-            const scrollAmount = 200; // Quantidade de pixels para rolar
-            const currentScroll = container.scrollLeft;
-            
+            if (!categorySwiper) return;
             if (direction === 'left') {
-                container.scrollTo({
-                    left: currentScroll - scrollAmount,
-                    behavior: 'smooth'
-                });
+                categorySwiper.slidePrev();
             } else {
-                container.scrollTo({
-                    left: currentScroll + scrollAmount,
-                    behavior: 'smooth'
-                });
+                categorySwiper.slideNext();
             }
         }
-        
+
         // Configurar event listeners das setas
         function setupNavigationArrows() {
             const leftArrow = document.getElementById('nav-arrow-left');
             const rightArrow = document.getElementById('nav-arrow-right');
-            const container = document.getElementById('category-nav');
-            
-            if (!leftArrow || !rightArrow || !container) return;
-            
+
+            if (!leftArrow || !rightArrow || !categorySwiper) return;
+
             // Event listeners para as setas
             leftArrow.addEventListener('click', () => scrollCategories('left'));
             rightArrow.addEventListener('click', () => scrollCategories('right'));
-            
-            // Event listener para scroll do container
-            container.addEventListener('scroll', updateNavigationArrows);
-            
+
+            // Atualizar setas quando o swiper mudar
+            categorySwiper.on('slideChange', updateNavigationArrows);
+
             // Event listener para resize da janela
             window.addEventListener('resize', updateNavigationArrows);
-            
+
             // Atualizar setas inicialmente
             setTimeout(updateNavigationArrows, 100);
+        }
+
+        function initializeCategorySwiper() {
+            if (categorySwiper) {
+                categorySwiper.destroy(true, true);
+            }
+
+            categorySwiper = new Swiper('#category-nav', {
+                slidesPerView: 'auto',
+                freeMode: true,
+                centeredSlides: true,
+                spaceBetween: 8
+            });
+
+            setupNavigationArrows();
         }
         
         // Setup click listeners for category buttons
@@ -10355,7 +10369,12 @@
             const activeButton = document.querySelector(`[data-category="${category}"]`);
             if (activeButton) {
                 activeButton.classList.add('active');
-                // centerCategoryButton(activeButton);
+                if (categorySwiper && categorySlideMap) {
+                    const index = categorySlideMap[category];
+                    if (typeof index !== 'undefined') {
+                        categorySwiper.slideTo(index);
+                    }
+                }
             }
         }
 
